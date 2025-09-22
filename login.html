@@ -44,9 +44,17 @@
   </main>
 
   <script type="module">
-    // ✅ Evita loop: se já está aprovado, pula login e vai pro menu
+    // ✅ Evita loop: se já está aprovado, pergunta ao usuário
     if (localStorage.getItem("acesso") === "aprovado") {
-      window.location.replace("index.html");
+      const escolha = confirm("Você já tem acesso aprovado. Deseja ir para o menu?");
+      if (escolha) {
+        window.location.replace("index.html");
+      } else {
+        // limpar dados para forçar novo login
+        localStorage.removeItem("savedEmail");
+        localStorage.removeItem("isLogged");
+        localStorage.removeItem("acesso");
+      }
     }
 
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.11/firebase-app.js";
