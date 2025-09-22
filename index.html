@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pintando a Palavra — Menu</title>
+
+  <!-- Manifest PWA -->
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#ffffff">
+
+  <style>
+    body {
+      margin: 0;
+      font-family: "Fredoka", sans-serif;
+      background: #fff9e6;
+      color: #000;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    header {
+      background: #ffd54f;
+      padding: 1rem;
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    header .btn {
+      background: #fff;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1.5rem;
+      text-align: center;
+    }
+
+    main button {
+      background: #ffd54f;
+      border: none;
+      padding: 1rem 2rem;
+      border-radius: 12px;
+      font-size: 1.2rem;
+      font-weight: bold;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <button class="btn" onclick="logout()">Sair</button>
+  </header>
+
+  <main>
+    <h1>Bem-vindo ao Pintando a Palavra</h1>
+    <button onclick="window.location.href='app/index.html'">Histórias</button>
+  </main>
+
+  <!-- Service Worker -->
+  <script>
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker
+          .register("/service-worker.js", { scope: "/" })
+          .then(() => console.log("SW registrado"))
+          .catch(err => console.error("Erro SW:", err));
+      });
+    }
+  </script>
+
+  <!-- 🔑 Lógica de verificação de acesso -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.11/firebase-app.js";
+    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/9.6.11/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "SUA_API_KEY",
+      authDomain: "SEU_AUTH_DOMAIN",
+      projectId: "SEU_PROJECT_ID",
+      storageBucket: "SEU_BUCKET",
+      messagingSenderId: "SEU_SENDER_ID",
+      appId: "SEU_APP_ID"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const email    = localStorage.getItem("savedEmail");
+    const isLogged = localStorage.getItem("isLogged") === "true";
+    const acesso   = localStorage.getItem("acesso"); // "aprovado"
+
+    // 1) Já aprovado antes? entra direto (inclusive offline)
+    if (acesso === "aprovado" && email) {
+      console.log("Acesso local aprovado — entrando offline.");
+    } else if (!email || !isLogged) {
+      // 2) Nunca logou/aprovou? vai pro login
+      window.location.replace("login.html");
+    } else {
+      // 3) Validar no Firebase (quando online)
+      try {
+        const ref = doc(db, "usuarios", email.toLowerCase());
+        const snap = await getDoc(ref);
+
+        if (snap.exists()) {
+          localStorage.setItem("acesso", "aprovado"); // ✅ grava aprovação local
+          console.log("Acesso confirmado no Firebase.");
+        } else {
+          // não aprovado no banco → limpa e volta pro login
+          localStorage.removeItem("acesso");
+          localStorage.removeItem("savedEmail");
+          localStorage.removeItem("isLogged");
+          window.location.replace("login.html");
+        }
+      } catch (err) {
+        console.warn("Falha ao validar (provável offline):", err);
+        if (!navigator.onLine && isLogged) {
+          console.log("Offline, mas já logado → permitido.");
+        } else if (acesso === "aprovado") {
+          console.log("Acesso salvo → permitido mesmo sem validar agora.");
+        } else {
+          window.location.replace("login.html");
+        }
+      }
+    }
+
+    // 🔴 Logout limpa tudo
+    window.logout = function() {
+      localStorage.removeItem("savedEmail");
+      localStorage.removeItem("isLogged");
+      localStorage.removeItem("acesso"); // limpa flag de aprovação também
+      window.location.replace("login.html");
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pintando a Palavra — Login</title>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: "Fredoka", sans-serif;
+      background: #fff9e6;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      text-align: center;
+    }
+
+    main {
+      background: #fff;
+      border: 2px solid #ffd54f;
+      border-radius: 12px;
+      padding: 2rem;
+      max-width: 400px;
+    }
+
+    button {
+      background: #ffd54f;
+      border: none;
+      padding: 1rem 2rem;
+      border-radius: 12px;
+      font-size: 1.2rem;
+      font-weight: bold;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Entrar</h1>
+    <p>Use seu Gmail para acessar</p>
+    <button id="loginBtn">Entrar com Gmail</button>
+  </main>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.11/firebase-app.js";
+    import { getAuth, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/9.6.11/firebase-auth.js";
+    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/9.6.11/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "SUA_API_KEY",
+      authDomain: "SEU_AUTH_DOMAIN",
+      projectId: "SEU_PROJECT_ID",
+      storageBucket: "SEU_BUCKET",
+      messagingSenderId: "SEU_SENDER_ID",
+      appId: "SEU_APP_ID"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const provider = new GoogleAuthProvider();
+    const db = getFirestore(app);
+
+    const loginBtn = document.getElementById("loginBtn");
+
+    loginBtn.addEventListener("click", async () => {
+      try {
+        const result = await signInWithPopup(auth, provider);
+        const user = result.user;
+        const email = user.email;
+
+        // consulta no Firestore
+        const ref = doc(db, "usuarios", email.toLowerCase());
+        const snap = await getDoc(ref);
+
+        if (snap.exists()) {
+          // ✅ salva tudo no localStorage
+          localStorage.setItem("savedEmail", email);
+          localStorage.setItem("isLogged", "true");
+          localStorage.setItem("acesso", "aprovado"); // 🔑 garante acesso offline depois
+
+          // redireciona para o menu
+          window.location.href = "index.html";
+        } else {
+          alert("Seu Gmail ainda não está autorizado.");
+        }
+      } catch (err) {
+        console.error("Erro no login:", err);
+        alert("Falha ao entrar. Tente novamente.");
+      }
+    });
+  </script>
+</body>
+</html>
