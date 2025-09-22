@@ -102,45 +102,44 @@
     const isLogged = localStorage.getItem("isLogged") === "true";
     const acesso   = localStorage.getItem("acesso"); // "aprovado"
 
-    // 1) Já aprovado antes? entra direto (inclusive offline)
-    if (acesso === "aprovado" && email) {
-      console.log("Acesso local aprovado — entrando offline.");
-    } else if (!email || !isLogged) {
-      // 2) Nunca logou/aprovou? vai pro login
+    // 🔹 Caso 1: já aprovado antes → entra direto (mesmo offline)
+    if (acesso === "aprovado" && email && isLogged) {
+      console.log("Acesso local aprovado — entrando.");
+    }
+    // 🔹 Caso 2: nunca logou/aprovou → manda pro login
+    else if (!email || !isLogged) {
       window.location.replace("login.html");
-    } else {
-      // 3) Validar no Firebase (quando online)
-      try {
-        const ref = doc(db, "usuarios", email.toLowerCase());
-        const snap = await getDoc(ref);
+    }
+    // 🔹 Caso 3: logado, mas precisa validar no Firebase (somente online)
+    else {
+      if (navigator.onLine) {
+        try {
+          const ref = doc(db, "usuarios", email.toLowerCase());
+          const snap = await getDoc(ref);
 
-        if (snap.exists()) {
-          localStorage.setItem("acesso", "aprovado"); // ✅ grava aprovação local
-          console.log("Acesso confirmado no Firebase.");
-        } else {
-          // não aprovado no banco → limpa e volta pro login
-          localStorage.removeItem("acesso");
-          localStorage.removeItem("savedEmail");
-          localStorage.removeItem("isLogged");
-          window.location.replace("login.html");
+          if (snap.exists()) {
+            localStorage.setItem("acesso", "aprovado"); // ✅ grava aprovação local
+            console.log("Acesso confirmado no Firebase.");
+          } else {
+            logout(); // limpa e volta pro login
+          }
+        } catch (err) {
+          console.warn("Falha ao validar no Firebase:", err);
+          // se já tinha aprovação local, mantém; senão força login
+          if (acesso !== "aprovado") {
+            logout();
+          }
         }
-      } catch (err) {
-        console.warn("Falha ao validar (provável offline):", err);
-        if (!navigator.onLine && isLogged) {
-          console.log("Offline, mas já logado → permitido.");
-        } else if (acesso === "aprovado") {
-          console.log("Acesso salvo → permitido mesmo sem validar agora.");
-        } else {
-          window.location.replace("login.html");
-        }
+      } else {
+        console.log("Offline, mas já logado → permitido.");
       }
     }
 
-    // 🔴 Logout limpa tudo
+    // 🔴 Logout unificado
     window.logout = function() {
       localStorage.removeItem("savedEmail");
       localStorage.removeItem("isLogged");
-      localStorage.removeItem("acesso"); // limpa flag de aprovação também
+      localStorage.removeItem("acesso");
       window.location.replace("login.html");
     }
   </script>
