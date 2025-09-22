@@ -10,7 +10,9 @@
   ],
   "routes": [
     { "handle": "filesystem" },
-    { "src": "/service-worker.js", "dest": "/service-worker.js",
+    {
+      "src": "/service-worker.js",
+      "dest": "/service-worker.js",
       "headers": {
         "Cache-Control": "no-cache, no-store, must-revalidate",
         "Service-Worker-Allowed": "/"
