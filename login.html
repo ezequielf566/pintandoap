@@ -44,6 +44,11 @@
   </main>
 
   <script type="module">
+    // ✅ Evita loop: se já está aprovado, pula login e vai pro menu
+    if (localStorage.getItem("acesso") === "aprovado") {
+      window.location.replace("index.html");
+    }
+
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.11/firebase-app.js";
     import { getAuth, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/9.6.11/firebase-auth.js";
     import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/9.6.11/firebase-firestore.js";
